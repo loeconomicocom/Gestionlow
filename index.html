@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -181,10 +181,21 @@ var dbFirebase = firebase.database();
         refrescar();
     }
 
-    function modSt(id, d) { 
-        const x = db.p.find(p=>p.id==id); 
-        if(x){ x.st+=d; save(); refrescar(); } 
-    }
+    function modSt(id, d) {
+  const x = db.p.find(p => p.id == id);
+
+  if (x) {
+    x.st += d;
+
+    // 🔥 GUARDAR EN FIREBASE
+    dbFirebase.ref("productos/" + x.id).set(x);
+
+    // 🔥 GUARDAR LOCAL
+    save();
+
+    refrescar();
+  }
+}
 
     function genOrd(id) { document.getElementById(id).value = Math.floor(1000000 + Math.random() * 9000000); }
     function genEAN() { document.getElementById('ean').value = "0781" + Math.floor(100000000 + Math.random() * 900000000); }
