@@ -1,0 +1,428 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Low Cost - Prueba 4.29 (Información Completa)</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        :root { --yellow: #FFD700; --dark: #1A222E; --bg: #F2F4F7; }
+        body { background-color: var(--bg); font-family: 'Segoe UI', sans-serif; padding-bottom: 110px; }
+        .app-header { background: var(--yellow); padding: 15px; border-radius: 0 0 20px 20px; position: sticky; top: 0; z-index: 1000; }
+        .nav-bottom { position: fixed; bottom: 0; left: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #ddd; z-index: 1000; }
+        .nav-link-custom { color: #6c757d; text-decoration: none; font-size: 0.7rem; text-align: center; flex: 1; border: none; background: none; cursor: pointer; }
+        .nav-link-custom.active { color: var(--dark); font-weight: bold; }
+        .nav-link-custom i { font-size: 1.3rem; display: block; }
+        .section { display: none; padding: 15px 0; }
+        .active-section { display: block; }
+        .dash-card { background: white; border-radius: 15px; padding: 12px; margin-bottom: 10px; border-left: 5px solid var(--yellow); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .product-item { background: white; border-radius: 15px; padding: 12px; margin-bottom: 12px; border: 1px solid #ddd; display: flex; align-items: center; }
+        .product-img { width: 60px; height: 60px; object-fit: cover; border-radius: 10px; margin-right: 12px; background: #eee; }
+        .btn-main { position: fixed; bottom: 85px; left: 5%; width: 90%; background: var(--dark); color: white; padding: 14px; border-radius: 15px; font-weight: bold; border: none; z-index: 900; }
+        .search-results { position: absolute; z-index: 1100; width: 100%; max-height: 200px; overflow-y: auto; background: white; border: 1px solid #ddd; border-radius: 8px; }
+        .search-item { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 0.85rem; }
+        .order-link { background: #e7f1ff; color: #0d6efd; padding: 2px 8px; border-radius: 5px; font-weight: bold; cursor: pointer; text-decoration: none; display: inline-block; }
+        .sale-card, .compra-card { background: white; border-radius: 12px; padding: 10px; margin-bottom: 10px; border-left: 5px solid #198754; position: relative; }
+        .compra-card { border-left-color: #0d6efd; }
+
+        @media print {
+            @page { margin: 0; }
+            body { margin: 1.5cm; font-family: 'Times New Roman', serif; }
+            .no-print, .nav-bottom, .btn-main, .app-header { display: none !important; }
+            #areaImpresion { display: block !important; width: 100%; font-size: 12pt; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="areaImpresion" style="display:none;"></div>
+
+<div class="app-header no-print">
+    <div class="d-flex justify-content-between align-items-center"><b>Low Cost</b> <i class="bi bi-person-circle fs-4"></i></div>
+</div>
+
+<div class="container mt-2 no-print">
+    <div id="sec-inicio" class="section">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold m-0">RESUMEN</h5>
+            <button class="btn btn-sm btn-dark rounded-pill px-3" onclick="descargarExcelGlobal()">Excel Reporte Global</button>
+        </div>
+        <div id="dashboard"></div>
+        <div class="dash-card border-primary small">Costo Total Inventario: <b id="valInvCosto">$ 0</b></div>
+        <div class="dash-card border-success small">Valor Venta Inventario: <b id="valInvVenta">$ 0</b></div>
+    </div>
+
+    <div id="sec-ventas" class="section">
+        <div class="d-flex justify-content-between align-items-center mb-3 px-2">
+            <div style="position:relative; width:65%">
+                <i class="bi bi-search" style="position:absolute; left:10px; top:8px; color:gray"></i>
+                <input type="text" id="filtro_v" class="form-control form-control-sm ps-5 rounded-pill" placeholder="Buscar venta..." onkeyup="refrescar()">
+            </div>
+            <button class="btn btn-sm btn-success rounded-pill px-3 shadow-sm" onclick="descargarExcelVentas()">Excel</button>
+        </div>
+        <div class="card p-3 border-0 shadow-sm mb-3">
+            <div class="row g-2 mb-2">
+                <div class="col-7"><input type="text" id="v_cliente" class="form-control form-control-sm" placeholder="Cliente"></div>
+                <div class="col-5"><div class="input-group input-group-sm"><input type="text" id="v_orden" class="form-control" placeholder="N°"><button class="btn btn-dark" onclick="genOrd('v_orden')">A</button></div></div>
+            </div>
+            <div class="row g-2 mb-2">
+                <div class="col-6"><input type="text" id="v_tel" class="form-control form-control-sm" placeholder="Tel"></div>
+                <div class="col-6"><input type="text" id="v_ced" class="form-control form-control-sm" placeholder="Ced"></div>
+            </div>
+            <input type="text" id="v_dir" class="form-control form-control-sm mb-2" placeholder="Dirección">
+            <input type="text" id="v_busca" class="form-control form-control-sm mb-2" placeholder="🔍 Buscar producto..." onkeyup="motorBusca(this.value, 'venta')">
+            <div id="res_v" class="search-results" style="display:none;"></div>
+            <div id="sel_v" class="alert alert-warning d-none py-1 px-2 small mb-2"><b>Elegido:</b> <span id="v_nom_p"></span><input type="hidden" id="v_id_p"></div>
+            <div class="row g-2 mb-3">
+                <div class="col-6"><label class="small fw-bold">Precio</label><input type="number" id="v_pre" class="form-control form-control-sm"></div>
+                <div class="col-6"><label class="small fw-bold">Cant</label><input type="number" id="v_can" class="form-control form-control-sm" value="1"></div>
+            </div>
+            <input type="hidden" id="v_edit_id">
+            <button class="btn btn-success w-100 fw-bold mb-2 shadow-sm" onclick="procesarVenta()">GENERAR RECIBO / GUARDAR</button>
+            <button class="btn btn-outline-secondary w-100 btn-sm mb-2" onclick="limpiarVenta()">LIMPIAR</button>
+            <div class="p-2 border rounded bg-light small">
+                <b>DATOS VENDEDOR:</b>
+                <input type="text" id="v_v_nom" class="form-control form-control-sm mb-1" placeholder="Nombre">
+                <div class="row g-1"><div class="col-6"><input type="text" id="v_v_ced" class="form-control form-control-sm" placeholder="Ced"></div><div class="col-6"><input type="text" id="v_v_ciu" class="form-control form-control-sm" placeholder="Ciudad"></div></div>
+            </div>
+        </div>
+        <div id="histVentas"></div>
+    </div>
+
+    <div id="sec-compras" class="section">
+        <div class="d-flex justify-content-between align-items-center mb-3 px-2">
+            <div style="position:relative; width:65%">
+                <i class="bi bi-search" style="position:absolute; left:10px; top:8px; color:gray"></i>
+                <input type="text" id="filtro_c" class="form-control form-control-sm ps-5 rounded-pill" placeholder="Buscar compra..." onkeyup="refrescar()">
+            </div>
+            <button class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm" onclick="descargarExcelCompras()">Excel</button>
+        </div>
+        <div class="card p-3 border-0 shadow-sm mb-3">
+            <div class="row g-2 mb-2">
+                <div class="col-7"><input type="text" id="c_prov" class="form-control form-control-sm" placeholder="Proveedor"></div>
+                <div class="col-5"><div class="input-group input-group-sm"><input type="text" id="c_orden" class="form-control" placeholder="N°"><button class="btn btn-dark" onclick="genOrd('c_orden')">A</button></div></div>
+            </div>
+            <input type="text" id="c_busca" class="form-control form-control-sm mb-2" placeholder="🔍 Buscar producto..." onkeyup="motorBusca(this.value, 'compra')">
+            <div id="res_c" class="search-results" style="display:none;"></div>
+            <div id="car_c" class="mb-2 p-2 border rounded bg-white" style="display:none;"></div>
+            <input type="hidden" id="c_edit_id">
+            <button class="btn btn-primary w-100 fw-bold shadow-sm mb-2" onclick="procesarCompra()">REGISTRAR / ACTUALIZAR</button>
+            <button class="btn btn-outline-secondary w-100 btn-sm" onclick="limpiarCompra()">LIMPIAR</button>
+        </div>
+        <div id="histCompras"></div>
+    </div>
+
+    <div id="sec-inventario" class="section active-section">
+        <div class="d-flex justify-content-between align-items-center mb-3 px-2">
+            <div style="position:relative; width:65%">
+                <i class="bi bi-search" style="position:absolute; left:10px; top:8px; color:gray"></i>
+                <input type="text" id="inv_filtro" class="form-control form-control-sm ps-5 rounded-pill" placeholder="Buscar producto..." onkeyup="refrescar()">
+            </div>
+            <button class="btn btn-sm btn-success rounded-pill px-3 shadow-sm" onclick="descargarExcelInv()">Excel</button>
+        </div>
+        <div id="listaP"></div>
+        <button class="btn-main shadow" onclick="abrirCrear()">+ Crear Producto</button>
+    </div>
+</div>
+
+<div class="modal fade" id="modP" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-body">
+    <h6 class="fw-bold mb-3">Producto</h6>
+    <input type="file" class="form-control mb-2" onchange="capRuta(this)">
+    <input type="text" id="fUrl" class="form-control mb-2" placeholder="imagenes/ejemplo.jpg">
+    <input type="text" id="nom" class="form-control mb-2" placeholder="Nombre">
+    <div class="row g-2 mb-2">
+        <div class="col-6"><input type="text" id="ref" class="form-control" placeholder="Referencia"></div>
+        <div class="col-6"><div class="input-group"><input type="text" id="ean" class="form-control" placeholder="EAN"><button class="btn btn-dark" onclick="genEAN()"><i class="bi bi-lightning-fill"></i></button></div></div>
+    </div>
+    <div class="row g-2 mb-2">
+        <div class="col-6"><input type="number" id="co" class="form-control" placeholder="Costo"></div>
+        <div class="col-6"><input type="number" id="pr" class="form-control" placeholder="Venta"></div>
+    </div>
+    <input type="number" id="st" class="form-control mb-3" placeholder="Stock">
+    <input type="hidden" id="eId"><button class="btn btn-dark w-100 fw-bold" onclick="saveP()">Guardar</button>
+</div></div></div></div>
+
+<nav class="nav-bottom no-print">
+    <button class="nav-link-custom" onclick="irA('sec-inicio', this)"><i class="bi bi-house"></i>Inicio</button>
+    <button class="nav-link-custom" onclick="irA('sec-ventas', this)"><i class="bi bi-receipt"></i>Ventas</button>
+    <button class="nav-link-custom" onclick="irA('sec-compras', this)"><i class="bi bi-cart3"></i>Compras</button>
+    <button class="nav-link-custom active" onclick="irA('sec-inventario', this)"><i class="bi bi-box-seam"></i>Inventario</button>
+</nav>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script>
+// 🔥 FIREBASE
+var firebaseConfig = {
+  apiKey: "AIzaSyCgqtj1ow1SjIoiPC2HfrqUBnQGCIPB4p8",
+  authDomain: "inventario-low.firebaseapp.com",
+  databaseURL: "https://inventario-low-default-rtdb.firebaseio.com",
+  projectId: "inventario-low",
+  storageBucket: "inventario-low.firebasestorage.app",
+  messagingSenderId: "962934465553",
+  appId: "1:962934465553:web:1fdbb91edc61de5a6d7db0",
+  measurementId: "G-KY3V4RZBTT"
+};
+
+
+firebase.initializeApp(firebaseConfig);
+var dbFirebase = firebase.database();
+    let db = JSON.parse(localStorage.getItem('lc_db_V16')) || { p: [], v: [], c: [] };
+    let car = [];
+    let modal = null;
+
+    const save = () => localStorage.setItem('lc_db_V16', JSON.stringify(db));
+
+    function irA(id, btn) {
+        document.querySelectorAll('.section').forEach(s => s.style.display = "none");
+        document.getElementById(id).style.display = "block";
+        document.querySelectorAll('.nav-link-custom').forEach(l => l.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+        refrescar();
+    }
+
+    function modSt(id, d) { 
+        const x = db.p.find(p=>p.id==id); 
+        if(x){ x.st+=d; save(); refrescar(); } 
+    }
+
+    function genOrd(id) { document.getElementById(id).value = Math.floor(1000000 + Math.random() * 9000000); }
+    function genEAN() { document.getElementById('ean').value = "0781" + Math.floor(100000000 + Math.random() * 900000000); }
+
+    function numLetras(num) {
+        const unidades = ['', 'UN', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE'];
+        const decenas = ['', 'DIEZ', 'VEINTE', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'];
+        const centenas = ['', 'CIENTO', 'DOSCIENTOS', 'TRESCIENTOS', 'CUATROCIENTOS', 'QUINIENTOS', 'SEISCIENTOS', 'SETECIENTOS', 'OCHOCIENTOS', 'NOVECIENTOS'];
+        const conv = (n) => {
+            let res = '';
+            if (n === 100) return 'CIEN ';
+            if (n > 99) { res += centenas[Math.floor(n/100)] + ' '; n %= 100; }
+            if (n > 10 && n < 20) { res += ['DIEZ','ONCE','DOCE','TRECE','CATORCE','QUINCE','DIECISEIS','DIECISIETE','DIECIOCHO','DIECINUEVE'][n-10] + ' '; }
+            else { res += decenas[Math.floor(n/10)] + ' '; if (n%10 > 0) res += (n>20?'Y ':'') + unidades[n%10] + ' '; }
+            return res;
+        };
+        if (num === 0) return 'CERO PESOS M/CTE';
+        let letras = '';
+        if (num >= 1000000) { letras += (Math.floor(num/1000000) === 1 ? 'UN MILLÓN ' : conv(Math.floor(num/1000000)) + 'MILLONES '); num %= 1000000; }
+        if (num >= 1000) { letras += (Math.floor(num/1000) === 1 ? 'MIL ' : conv(Math.floor(num/1000)) + 'MIL '); num %= 1000; }
+        letras += conv(num);
+        return letras.trim() + ' PESOS M/CTE';
+    }
+
+    function refrescar() {
+        const dash = document.getElementById('dashboard');
+        if(dash){
+            const calc = (d) => { let res = db.v.filter(v => (new Date() - new Date(v.f))/864e5 <= d); return { t: res.reduce((a,b)=>a+b.tot,0), g: res.reduce((a,b)=>a+(b.tot-(b.co*b.can)),0) }; };
+            dash.innerHTML = [1, 7, 15, 30, 365].map((d, i) => { let r = calc(d); return `<div class="dash-card"><b>${["Hoy", "Semana", "Quincena", "Mes", "Año"][i]}:</b> Venta $${r.t.toLocaleString()} | Ganancia $${r.g.toLocaleString()}</div>`; }).join('');
+        }
+        document.getElementById('valInvCosto').innerText = "$ " + db.p.reduce((a,b)=>a+(b.co*b.st),0).toLocaleString();
+        document.getElementById('valInvVenta').innerText = "$ " + db.p.reduce((a,b)=>a+(b.pr*b.st),0).toLocaleString();
+
+        const fInv = document.getElementById('inv_filtro').value.toLowerCase();
+        document.getElementById('listaP').innerHTML = db.p.filter(x => x.nom.toLowerCase().includes(fInv) || (x.ean && x.ean.includes(fInv))).map(x => `
+            <div class="product-item">
+                <img src="${x.im}" class="product-img">
+                <div class="flex-grow-1">
+                    <div class="fw-bold small">${x.nom}</div>
+                    <div class="text-muted" style="font-size:0.7rem">Ref: ${x.ref||'-'} | EAN: ${x.ean||'-'} | Stock: ${x.st}</div>
+                </div>
+                <div class="d-flex align-items-center">
+                    <button class="btn btn-sm btn-outline-dark px-2 py-0" onclick="modSt(${x.id},-1)">-</button>
+                    <span class="mx-2 fw-bold" style="min-width:20px; text-align:center">${x.st}</span>
+                    <button class="btn btn-sm btn-outline-dark px-2 py-0" onclick="modSt(${x.id},1)">+</button>
+                    <button class="btn btn-sm btn-light border ms-2" onclick="abrirEd(${x.id})"><i class="bi bi-pencil"></i></button>
+                </div>
+            </div>`).join('');
+
+        const fV = document.getElementById('filtro_v').value.toLowerCase();
+        document.getElementById('histVentas').innerHTML = db.v.filter(x => x.cli.toLowerCase().includes(fV) || x.orden.toString().includes(fV)).slice().reverse().map(x => `
+            <div class="sale-card">
+                <span class="order-link" onclick="editarVenta(${x.id})">#${x.orden}</span> - ${x.cli}
+                <div class="text-muted" style="font-size:0.75rem; margin-top:5px">Prod: ${x.prod} | Cant: ${x.can} | Total: $${x.tot.toLocaleString()}</div>
+                <div class="mt-2"><i class="bi bi-printer me-3" onclick="impV(${x.id})"></i><i class="bi bi-trash text-danger" onclick="borrReg(${x.id},'v')"></i></div>
+            </div>`).join('');
+
+        const fC = document.getElementById('filtro_c').value.toLowerCase();
+        document.getElementById('histCompras').innerHTML = db.c.filter(x => x.prov.toLowerCase().includes(fC) || x.orden.toString().includes(fC)).slice().reverse().map(x => {
+            let total = x.items.reduce((a,b)=>a+(b.co*b.can),0);
+            let primerProd = x.items.length > 0 ? x.items[0].nom : 'N/A';
+            return `<div class="compra-card">
+                <span class="order-link" onclick="editarCompra(${x.id})">#${x.orden}</span> - ${x.prov}
+                <div class="text-muted" style="font-size:0.75rem; margin-top:5px">Prod: ${primerProd}${x.items.length > 1 ? '... (+'+(x.items.length-1)+')' : ''} | Total Compra: $${total.toLocaleString()}</div>
+                <div class="mt-2"><i class="bi bi-printer me-3" onclick="impC(${x.id})"></i><i class="bi bi-trash text-danger" onclick="borrReg(${x.id},'c')"></i></div>
+            </div>`;
+        }).join('');
+    }
+
+    function motorBusca(val, tipo) {
+        const r = document.getElementById(tipo === 'venta' ? 'res_v' : 'res_c');
+        if(val.length < 1) { r.style.display = "none"; return; }
+        let f = db.p.filter(x => x.nom.toLowerCase().includes(val.toLowerCase()) || (x.ean && x.ean.includes(val)));
+        r.innerHTML = f.map(x => `<div class="search-item" onclick="selP('${tipo}',${x.id},'${x.nom}',${x.pr},${x.co})">${x.nom}</div>`).join('');
+        r.style.display = "block";
+    }
+
+    function selP(tipo, id, n, pr, co) {
+        if(tipo === 'venta'){
+            document.getElementById('v_id_p').value = id; document.getElementById('v_nom_p').innerText = n;
+            document.getElementById('v_pre').value = pr; document.getElementById('sel_v').classList.remove('d-none');
+            document.getElementById('res_v').style.display = "none";
+        } else {
+            car.push({ id, nom: n, can: 1, co }); renderCar();
+            document.getElementById('res_c').style.display = "none"; document.getElementById('c_busca').value = "";
+        }
+    }
+
+    function renderCar() {
+        const d = document.getElementById('car_c'); d.style.display = car.length ? "block" : "none";
+        d.innerHTML = car.map((x, i) => `<div class="d-flex justify-content-between mb-1 small border-bottom"><span>${x.nom}</span> <div><input type="number" value="${x.co}" class="form-control form-control-sm d-inline w-25" onchange="car[${i}].co=parseFloat(this.value)"> <input type="number" value="${x.can}" class="form-control form-control-sm d-inline w-25" onchange="car[${i}].can=parseInt(this.value)"> <i class="bi bi-x-circle text-danger" onclick="car.splice(${i},1);renderCar()"></i></div></div>`).join('');
+    }
+
+    function procesarVenta() {
+        const pId = parseInt(document.getElementById('v_id_p').value);
+        const can = parseInt(document.getElementById('v_can').value);
+        const editId = document.getElementById('v_edit_id').value;
+        const p = db.p.find(x => x.id === pId);
+        if(!p || !document.getElementById('v_cliente').value) return alert("Faltan datos");
+        const vObj = { id: editId ? parseInt(editId) : Date.now(), orden: document.getElementById('v_orden').value, cli: document.getElementById('v_cliente').value, tel: document.getElementById('v_tel').value, ced: document.getElementById('v_ced').value, dir: document.getElementById('v_dir').value, v_nom: document.getElementById('v_v_nom').value, v_ced: document.getElementById('v_v_ced').value, v_ciu: document.getElementById('v_v_ciu').value, p_id: p.id, prod: p.nom, can, tot: parseFloat(document.getElementById('v_pre').value)*can, co: p.co, f: new Date().toISOString() };
+        if(editId) { db.v[db.v.findIndex(x=>x.id==editId)] = vObj; } else { p.st -= can; db.v.push(vObj); }
+        save(); refrescar(); limpiarVenta(); alert("Guardado");
+    }
+
+    function procesarCompra() {
+        const editId = document.getElementById('c_edit_id').value;
+        if(!car.length) return;
+        const cObj = { id: editId ? parseInt(editId) : Date.now(), orden: document.getElementById('c_orden').value, prov: document.getElementById('c_prov').value, items: [...car], f: new Date().toISOString() };
+        if(editId) { db.c[db.c.findIndex(x=>x.id==editId)] = cObj; } else { car.forEach(it => { const p = db.p.find(x=>x.id==it.id); if(p) { p.st += it.can; p.co = it.co; } }); db.c.push(cObj); }
+        car = []; save(); refrescar(); limpiarCompra(); alert("Registrado");
+    }
+
+    function editarVenta(id) {
+        const v = db.v.find(x => x.id == id); if(!v) return;
+        irA('sec-ventas');
+        document.getElementById('v_edit_id').value = v.id; document.getElementById('v_cliente').value = v.cli;
+        document.getElementById('v_orden').value = v.orden; document.getElementById('v_tel').value = v.tel;
+        document.getElementById('v_ced').value = v.ced; document.getElementById('v_dir').value = v.dir;
+        document.getElementById('v_v_nom').value = v.v_nom; document.getElementById('v_v_ced').value = v.v_ced;
+        document.getElementById('v_v_ciu').value = v.v_ciu; document.getElementById('v_id_p').value = v.p_id;
+        document.getElementById('v_nom_p').innerText = v.prod; document.getElementById('v_pre').value = v.tot/v.can;
+        document.getElementById('v_can').value = v.can; document.getElementById('sel_v').classList.remove('d-none');
+    }
+
+    function editarCompra(id) {
+        const c = db.c.find(x => x.id == id); if(!c) return;
+        irA('sec-compras');
+        document.getElementById('c_edit_id').value = c.id; document.getElementById('c_prov').value = c.prov;
+        document.getElementById('c_orden').value = c.orden; car = [...c.items]; renderCar();
+    }
+
+    // IMPRESIÓN CUENTA DE COBRO (ORIGINAL)
+    function impV(id) {
+        const v = db.v.find(x => x.id == id); const a = document.getElementById('areaImpresion');
+        if(!v) return;
+        a.innerHTML = `
+            <div style="text-align:right">Fecha: ${new Date(v.f).toLocaleDateString()}</div>
+            <div style="margin-top:40px">Yo, <b>${v.v_nom}</b> con C.C. <b>${v.v_ced}</b> de <b>${v.v_ciu}</b></div>
+            <div style="text-align:center; margin: 40px 0;"><b>MANIFIESTO QUE:</b></div>
+            <div><b>${v.cli}</b> con C.C. <b>${v.ced}</b> dirección <b>${v.dir}</b></div>
+            <div style="margin-top:20px">Me debe la suma de: <b>$ ${v.tot.toLocaleString()}</b></div>
+            <div style="font-style:italic">(${numLetras(v.tot)})</div>
+            <div style="margin-top:20px">Por concepto de: <b>${v.prod} (Cant: ${v.can})</b></div>
+            <div style="margin-top:10px">Orden N°: <b>${v.orden}</b></div>
+            <div style="margin-top:100px; border-top: 1px solid #000; width: 250px; text-align:center">Firma Responsable</div>
+        `;
+        a.style.display="block"; window.print(); a.style.display="none";
+    }
+
+    function impC(id) {
+        const c = db.c.find(x => x.id == id); const a = document.getElementById('areaImpresion');
+        let total = c.items.reduce((acc, it) => acc + (it.co * it.can), 0);
+        let filas = c.items.map(it => `<tr><td>${it.nom}</td><td>${it.can}</td><td>$${it.co.toLocaleString()}</td></tr>`).join('');
+        a.innerHTML = `<h4>ENTRADA #${c.orden}</h4><p>Prov: ${c.prov}</p><table class="table"><thead><tr><th>Prod</th><th>Cant</th><th>Costo</th></tr></thead><tbody>${filas}</tbody></table><h5 class="text-end">Total: $${total.toLocaleString()}</h5>`;
+        a.style.display="block"; window.print(); a.style.display="none";
+    }
+
+    function descargarExcelGlobal() {
+        let t = "REPORTE GLOBAL\n\nINVENTARIO\nNombre\tStock\tCosto\tVenta\n";
+        db.p.forEach(x => t += `${x.nom}\t${x.st}\t${x.co}\t${x.pr}\n`);
+        t += "\nVENTAS\nFecha\tOrden\tCliente\tProducto\tTotal\tGanancia\n";
+        db.v.forEach(x => t += `${new Date(x.f).toLocaleDateString()}\t${x.orden}\t${x.cli}\t${x.prod}\t${x.tot}\t${x.tot-(x.co*x.can)}\n`);
+        const b = new Blob([t], {type:"application/vnd.ms-excel"}); const a = document.createElement("a"); a.href=URL.createObjectURL(b); a.download="Reporte_Global.xls"; a.click();
+    }
+
+    function descargarExcelVentas() {
+        let t = "Fecha\tOrden\tCliente\tProducto\tTotal\n";
+        db.v.forEach(x => t += `${new Date(x.f).toLocaleDateString()}\t${x.orden}\t${x.cli}\t${x.prod}\t${x.tot}\n`);
+        const b = new Blob([t], {type:"application/vnd.ms-excel"}); const a = document.createElement("a"); a.href=URL.createObjectURL(b); a.download="Ventas.xls"; a.click();
+    }
+
+    function descargarExcelCompras() {
+        let t = "Fecha\tOrden\tProveedor\tTotal\n";
+        db.c.forEach(x => t += `${new Date(x.f).toLocaleDateString()}\t${x.orden}\t${x.prov}\t${x.items.reduce((a,b)=>a+(b.co*b.can),0)}\n`);
+        const b = new Blob([t], {type:"application/vnd.ms-excel"}); const a = document.createElement("a"); a.href=URL.createObjectURL(b); a.download="Compras.xls"; a.click();
+    }
+
+    function descargarExcelInv() {
+        let t = "EAN\tNombre\tStock\tCosto\tVenta\n";
+        db.p.forEach(x => t += `${x.ean||''}\t${x.nom}\t${x.st}\t${x.co}\t${x.pr}\n`);
+        const b = new Blob([t], {type:"application/vnd.ms-excel"}); const a = document.createElement("a"); a.href=URL.createObjectURL(b); a.download="Inv.xls"; a.click();
+    }
+
+    function cargarFirebase() {
+    dbFirebase.ref("productos").once("value", snapshot => {
+        const data = snapshot.val();
+        if (data) {
+            db.p = Object.values(data);
+            save();
+            refrescar();
+        }
+    });
+}
+
+    function abrirEd(id) { const x = db.p.find(p=>p.id==id); document.getElementById('eId').value=x.id; document.getElementById('nom').value=x.nom; document.getElementById('ref').value=x.ref||""; document.getElementById('ean').value=x.ean||""; document.getElementById('co').value=x.co; document.getElementById('pr').value=x.pr; document.getElementById('st').value=x.st; document.getElementById('fUrl').value=x.im; modal.show(); }
+    function borrReg(id, t) { if(confirm("¿Eliminar?")) { if(t==='v') db.v=db.v.filter(x=>x.id!=id); else db.c=db.c.filter(x=>x.id!=id); save(); refrescar(); } }
+    function limpiarVenta() { ['v_cliente','v_orden','v_tel','v_ced','v_dir','v_id_p','v_pre','v_edit_id','v_busca'].forEach(i=>document.getElementById(i).value=""); document.getElementById('sel_v').classList.add('d-none'); }
+    function limpiarCompra() { ['c_prov','c_orden','c_edit_id','c_busca'].forEach(i=>document.getElementById(i).value=""); car=[]; renderCar(); }
+    function abrirCrear() { ['eId','nom','ref','ean','co','pr','st','fUrl'].forEach(i=>document.getElementById(i).value=""); modal.show(); }
+    function capRuta(i) { if (i.files[0]) document.getElementById('fUrl').value = "imagenes/" + i.files[0].name; }
+function saveP() {
+    const id = document.getElementById('eId').value;
+
+    const o = {
+        id: id ? parseInt(id) : Date.now(),
+        nom: document.getElementById('nom').value,
+        ref: document.getElementById('ref').value,
+        ean: document.getElementById('ean').value,
+        co: parseFloat(document.getElementById('co').value) || 0,
+        pr: parseFloat(document.getElementById('pr').value) || 0,
+        st: parseInt(document.getElementById('st').value) || 0,
+        im: document.getElementById('fUrl').value,
+        f_crea: new Date().toISOString()
+    };
+
+    // 🔥 GUARDAR EN FIREBASE
+    dbFirebase.ref("productos/" + o.id).set(o);
+
+    // 💾 GUARDAR LOCAL
+    if(id) {
+        const index = db.p.findIndex(x => x.id == id);
+        if(index !== -1) {
+            db.p[index] = o;
+        }
+    } else {
+        db.p.push(o);
+    }
+
+    save();
+    modal.hide();
+    refrescar();
+}
+
+    window.onload = () => { 
+    modal = new bootstrap.Modal(document.getElementById('modP')); 
+    cargarFirebase(); 
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
