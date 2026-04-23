@@ -152,6 +152,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
 // 🔥 FIREBASE
 var firebaseConfig = {
   apiKey: "AIzaSyCgqtj1ow1SjIoiPC2HfrqUBnQGCIPB4p8",
@@ -167,6 +168,7 @@ var firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 var dbFirebase = firebase.database();
+var storage = firebase.storage();
     let db = JSON.parse(localStorage.getItem('lc_db_V16')) || { p: [], v: [], c: [] };
     let car = [];
     let modal = null;
@@ -395,7 +397,30 @@ var dbFirebase = firebase.database();
     function limpiarVenta() { ['v_cliente','v_orden','v_tel','v_ced','v_dir','v_id_p','v_pre','v_edit_id','v_busca'].forEach(i=>document.getElementById(i).value=""); document.getElementById('sel_v').classList.add('d-none'); }
     function limpiarCompra() { ['c_prov','c_orden','c_edit_id','c_busca'].forEach(i=>document.getElementById(i).value=""); car=[]; renderCar(); }
     function abrirCrear() { ['eId','nom','ref','ean','co','pr','st','fUrl'].forEach(i=>document.getElementById(i).value=""); modal.show(); }
-    function capRuta(i) { if (i.files[0]) document.getElementById('fUrl').value = "imagenes/" + i.files[0].name; }
+    function capRuta(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const nombre = Date.now() + "_" + file.name;
+
+  const storageRef = storage.ref("productos/" + nombre);
+
+  const uploadTask = storageRef.put(file);
+
+  uploadTask.on(
+    "state_changed",
+    null,
+    (error) => {
+      console.error("Error subiendo imagen:", error);
+    },
+    () => {
+      uploadTask.snapshot.ref.getDownloadURL().then((url) => {
+        document.getElementById("fUrl").value = url;
+        console.log("Imagen subida:", url);
+      });
+    }
+  );
+}
 function saveP() {
     const id = document.getElementById('eId').value;
 
